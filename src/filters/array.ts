@@ -259,7 +259,7 @@ export function sample<T> (this: FilterImpl, v: T[] | string, count = 1): T | st
   if (isNil(v)) return []
   if (!isArray(v)) v = stringify(v)
   this.context.memoryLimit.use(count)
-  const shuffled = [...v].sort(() => Math.random() - 0.5)
+  const shuffled = [...v].sort(() => this.context.opts.allowDynamicRendering ? Math.random() - 0.5 : 0)
   if (count === 1) return shuffled[0]
   return shuffled.slice(0, count)
 }

@@ -90,6 +90,8 @@ export interface LiquidOptions {
   renderLimit?: number;
   /** For DoS handling, limit new objects creation, including array concat/join/strftime, etc. A typical PC can handle 1e9 (1G) memory without issue. */
   memoryLimit?: number;
+  /** Whether to allow methods which require dynamic rendering (cannot be pre-rendered), like "now" or "today" in the date filter. Defaults to `true`. If false, these filters will return undefined. */
+  allowDynamicRendering?: boolean;
 }
 
 export interface RenderOptions {
@@ -115,6 +117,8 @@ export interface RenderOptions {
   renderLimit?: number;
   /** For DoS handling, limit new objects creation, including array concat/join/strftime, etc. A typical PC can handle 1e9 (1G) memory without issue.. */
   memoryLimit?: number;
+  /** Same as `allowDynamicRendering` on LiquidOptions, but only for current render() call */
+  allowDynamicRendering?: boolean;
 }
 
 export interface RenderFileOptions extends RenderOptions {
@@ -162,6 +166,7 @@ export interface NormalizedFullOptions extends NormalizedOptions {
   parseLimit: number;
   renderLimit: number;
   memoryLimit: number;
+  allowDynamicRendering: boolean;
 }
 
 export const defaultOptions: NormalizedFullOptions = {
@@ -197,7 +202,8 @@ export const defaultOptions: NormalizedFullOptions = {
   operators: defaultOperators,
   memoryLimit: Infinity,
   parseLimit: Infinity,
-  renderLimit: Infinity
+  renderLimit: Infinity,
+  allowDynamicRendering: true
 }
 
 export function normalize (options: LiquidOptions): NormalizedFullOptions {
