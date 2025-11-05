@@ -1,6 +1,6 @@
 {
   "name": "liquidjs",
-  "version": "10.24.0",
+  "version": "10.24.0-iso.main",
   "sideEffects": false,
   "description": "A simple, expressive and safe Shopify / Github Pages compatible template engine in pure JavaScript.",
   "main": "dist/liquid.node.js",
@@ -29,7 +29,8 @@
     "build:min": "BUNDLES=min rollup -c rollup.config.mjs",
     "build:umd": "BUNDLES=umd rollup -c rollup.config.mjs",
     "build:charmap": "./bin/character-gen.js > src/util/character.ts",
-    "build:docs": "bin/build-docs.sh"
+    "build:docs": "bin/build-docs.sh",
+    "prepare": "node -e \"if (!require('fs').existsSync('dist')) process.exit(1)\" || npm run build"
   },
   "bin": {
     "liquidjs": "./bin/liquid.js",
