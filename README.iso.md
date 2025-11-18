@@ -17,7 +17,7 @@ We don't have a npm server in-house so we'll use pnpm support for github.
 4. `git add -f dist package.json`
     - necessary as we're not publishing to "npm" but to the git branch.
 5. `git commit -m "release: <version>"`
-6. `git tag -m <version>`
+6. `git tag <version>`
 7. `git push`
 8. `git push --tags` 
 
