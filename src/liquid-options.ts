@@ -90,8 +90,12 @@ export interface LiquidOptions {
   renderLimit?: number;
   /** For DoS handling, limit new objects creation, including array concat/join/strftime, etc. A typical PC can handle 1e9 (1G) memory without issue. */
   memoryLimit?: number;
-  /** Whether to allow methods which require dynamic rendering (cannot be pre-rendered), like "now" or "today" in the date filter. Defaults to `true`. If false, these filters will return undefined. */
+  /** Whether to allow methods which require dynamic rendering (cannot be pre-rendered), like "now" or "today" in the date filter. Defaults to `true`. If false, these filters will return undefined unless dynamicRenderingFallbacks are provided. */
   allowDynamicRendering?: boolean;
+  /** Fallbacks for dynamic rendering (when allowDynamicRendering is false). Defaults to `undefined`. */
+  dynamicRenderingFallbacks?: {
+    now?: () => Date;
+  }
 }
 
 export interface RenderOptions {
@@ -119,6 +123,10 @@ export interface RenderOptions {
   memoryLimit?: number;
   /** Same as `allowDynamicRendering` on LiquidOptions, but only for current render() call */
   allowDynamicRendering?: boolean;
+  /** Same as `dynamicRenderingFallbacks` on LiquidOptions, but only for current render() call */
+  dynamicRenderingFallbacks?: {
+    now?: () => Date;
+  }
 }
 
 export interface RenderFileOptions extends RenderOptions {
