@@ -3,6 +3,7 @@
 ## Dev process
 
 1. Create branches and PR them against the `iso-main` branch. Squash merge.
+   - IMPORTANT: Github will open the PR against the upstream `liquidjs` by default. Make sure you change the base repo to our repo and base branch to `iso-main`.
 
 ## Release process
 
