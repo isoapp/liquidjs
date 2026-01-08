@@ -7,6 +7,7 @@ import { defaultOperators, Operators } from './render'
 import misc from './filters/misc'
 import { escape } from './filters/html'
 import { MapFS } from './fs/map-fs'
+import { Promisable } from 'type-fest'
 
 type OutputEscape = (value: any) => string
 type OutputEscapeOption = 'escape' | 'json' | OutputEscape
@@ -43,7 +44,7 @@ export interface LiquidOptions {
   /** Modifies the behavior of `strictVariables`. If set, a single undefined variable will *not* cause an exception in the context of the `if`/`elsif`/`unless` tag and the `default` filter. Instead, it will evaluate to `false` and `null`, respectively. Irrelevant if `strictVariables` is not set. Defaults to `false`. **/
   lenientIf?: boolean;
   /** JavaScript timezone name or timezoneOffset for `date` filter, default to local time. That means if you're in Australia (UTC+10), it'll default to `-600` or `Australia/Lindeman` */
-  timezoneOffset?: number | string;
+  timezoneOffset?: Promisable<number | string> | (() => Promisable<number | string>);
   /** Default date format to use if the date filter doesn't include a format. Defaults to `%A, %B %-e, %Y at %-l:%M %P %z`. */
   dateFormat?: string;
   /** Default locale, will be used by date filter. Defaults to system locale. */
@@ -90,11 +91,21 @@ export interface LiquidOptions {
   renderLimit?: number;
   /** For DoS handling, limit new objects creation, including array concat/join/strftime, etc. A typical PC can handle 1e9 (1G) memory without issue. */
   memoryLimit?: number;
-  /** Whether to allow methods which require dynamic rendering (cannot be pre-rendered), like "now" or "today" in the date filter. Defaults to `true`. If false, these filters will return undefined unless dynamicRenderingFallbacks are provided. */
-  allowDynamicRendering?: boolean;
-  /** Fallbacks for dynamic rendering (when allowDynamicRendering is false). Defaults to `undefined`. */
-  dynamicRenderingFallbacks?: {
-    now?: () => Date;
+  /**
+   * Alterative implementations for dynamic data, like "now" or "random".
+   * These allow the caller to provide a cached implementation of these methods when used in a cached environment like Next.js pre-rendering. These may return promises, so you can use a `use cache` directive with them.
+   */
+  dynamicMethods?: {
+    /**
+     * get the current timestamp, or as close as possible to it in a cached environment
+     */
+    now?: () => Promisable<Date>;
+    /**
+     * generate a random number
+     *
+     * {@link seed} is stable based on the current position and text of the token using `random`, but to generate a truly random number you should append more randomness (or ignore it completely). this parameter mainly exists to allow for reproducible randomness in cached environments where the parameters form the cache key (e.g. `"use cache"`).
+     */
+    random?: (seed: string) => Promisable<number>;
   }
 }
 
@@ -121,11 +132,12 @@ export interface RenderOptions {
   renderLimit?: number;
   /** For DoS handling, limit new objects creation, including array concat/join/strftime, etc. A typical PC can handle 1e9 (1G) memory without issue.. */
   memoryLimit?: number;
-  /** Same as `allowDynamicRendering` on LiquidOptions, but only for current render() call */
-  allowDynamicRendering?: boolean;
-  /** Same as `dynamicRenderingFallbacks` on LiquidOptions, but only for current render() call */
-  dynamicRenderingFallbacks?: {
-    now?: () => Date;
+  /**
+   * Same as `dynamicMethods` on LiquidOptions, but only for current render() call
+   */
+  dynamicMethods?: {
+    now?: () => Promisable<Date>;
+    random?: () => Promisable<number>;
   }
 }
 
@@ -174,7 +186,10 @@ export interface NormalizedFullOptions extends NormalizedOptions {
   parseLimit: number;
   renderLimit: number;
   memoryLimit: number;
-  allowDynamicRendering: boolean;
+  dynamicMethods: {
+    now: () => Promisable<Date>;
+    random: (seed: string) => Promisable<number>;
+  }
 }
 
 export const defaultOptions: NormalizedFullOptions = {
@@ -211,7 +226,10 @@ export const defaultOptions: NormalizedFullOptions = {
   memoryLimit: Infinity,
   parseLimit: Infinity,
   renderLimit: Infinity,
-  allowDynamicRendering: true
+  dynamicMethods: {
+    now: () => new Date(),
+    random: () => Math.random(),
+  },
 }
 
 export function normalize (options: LiquidOptions): NormalizedFullOptions {
@@ -230,6 +248,10 @@ export function normalize (options: LiquidOptions): NormalizedFullOptions {
   if ((!options.fs!.dirname || !options.fs!.sep) && options.relativeReference) {
     console.warn('[LiquidJS] `fs.dirname` and `fs.sep` are required for relativeReference, set relativeReference to `false` to suppress this warning')
     options.relativeReference = false
+  }
+  options.dynamicMethods = {
+    ...defaultOptions.dynamicMethods,
+    ...options.dynamicMethods,
   }
   options.root = normalizeDirectoryList(options.root)
   options.partials = normalizeDirectoryList(options.partials)

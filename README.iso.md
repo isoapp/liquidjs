@@ -2,10 +2,17 @@
 
 ## Dev process
 
+### Test locally
+1. Run `npm run build`
+1. Modify `web-modular-liquid`'s `package.json` so the liquid dependency points to this locally, e.g. `file:/Users/rik/District/Code/liquidjs`. Don't commit this.
+1. You may need to restart Next.js to see changes
+
+### PR
+
 1. Create branches and PR them against the `iso-main` branch. Squash merge.
    - IMPORTANT: Github will open the PR against the upstream `liquidjs` by default. Make sure you change the base repo to our repo and base branch to `iso-main`.
 
-## Release process
+### Release
 
 We don't have a npm server in-house so we'll use pnpm support for github.
 
@@ -23,5 +30,5 @@ We don't have a npm server in-house so we'll use pnpm support for github.
 
 ### Update dependencies
 
-Update `liquidjs` dependency to `github:isoapp/liquidjs#<version>`
+Update `liquidjs` dependency in `web-modular-liquid` to `github:isoapp/liquidjs#<version>`
 
