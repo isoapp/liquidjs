@@ -254,12 +254,15 @@ export function uniq<T> (this: FilterImpl, arr: T[]): T[] {
   return [...new Set(arr)]
 }
 
-export function sample<T> (this: FilterImpl, v: T[] | string, count = 1): T | string | (T | string)[] {
+export async function sample<T> (this: FilterImpl, v: T[] | string, count = 1): Promise<T | string | (T | string)[]> {
   v = toValue(v)
   if (isNil(v)) return []
   if (!isArray(v)) v = stringify(v)
   this.context.memoryLimit.use(count)
-  const shuffled = [...v].sort(() => this.context.opts.allowDynamicRendering ? Math.random() - 0.5 : 0)
+
+  const baseSeed = `${this.token.file ?? ''}${this.token.getPosition().join()}${this.token.getText()}`
+  const randoms = await Promise.all([...v].map((_, i) => this.context.opts.dynamicMethods.random(`${baseSeed}${i}`)))
+  const shuffled = [...v].sort(() => (randoms.shift() ?? 0) - 0.5)
   if (count === 1) return shuffled[0]
   return shuffled.slice(0, count)
 }

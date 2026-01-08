@@ -1,11 +1,11 @@
-import { toValue, stringify, isString, isNumber, LiquidDate, strftime, isNil } from '../util'
+import { toValue, stringify, isString, isNumber, LiquidDate, strftime, isNil, isFunction } from '../util'
 import { FilterImpl } from '../template'
 import { NormalizedFullOptions } from '../liquid-options'
 
-export function date (this: FilterImpl, v: string | Date, format?: string, timezoneOffset?: number | string) {
+export async function date (this: FilterImpl, v: string | Date, format?: string, timezoneOffset?: number | string) {
   const size = ((v as string)?.length ?? 0) + (format?.length ?? 0) + ((timezoneOffset as string)?.length ?? 0)
   this.context.memoryLimit.use(size)
-  const date = parseDate(v, this.context.opts, timezoneOffset)
+  const date = await parseDate(v, this.context.opts, timezoneOffset)
   if (!date) return v
   format = toValue(format)
   format = isNil(format) ? this.context.opts.dateFormat : stringify(format)
@@ -28,8 +28,8 @@ export function date_to_long_string (this: FilterImpl, v: string | Date, type?: 
   return stringify_date.call(this, v, '%B', type, style)
 }
 
-function stringify_date (this: FilterImpl, v: string | Date, month_type: string, type?: string, style?: string) {
-  const date = parseDate(v, this.context.opts)
+async function stringify_date (this: FilterImpl, v: string | Date, month_type: string, type?: string, style?: string) {
+  const date = await parseDate(v, this.context.opts)
   if (!date) return v
   if (type === 'ordinal') {
     const d = date.getDate()
@@ -40,27 +40,39 @@ function stringify_date (this: FilterImpl, v: string | Date, month_type: string,
   return strftime(date, `%d ${month_type} %Y`)
 }
 
-function parseDate (v: string | Date, opts: NormalizedFullOptions, timezoneOffset?: number | string): LiquidDate | undefined {
+async function parseDate (v: string | Date, opts: NormalizedFullOptions, timezoneOffset?: number | string): Promise<LiquidDate | undefined> {
   let date: LiquidDate | undefined
-  const defaultTimezoneOffset = timezoneOffset ?? opts.timezoneOffset
+
+  function getTimezoneOffset() {
+    if (timezoneOffset !== undefined) {
+      return timezoneOffset
+    }
+
+    if (isFunction(opts.timezoneOffset)) {
+      return opts.timezoneOffset()
+    }
+
+    return opts.timezoneOffset
+  }
+
   const locale = opts.locale
   v = toValue(v)
   if (v === 'now' || v === 'today') {
-    const now = opts.allowDynamicRendering ? new Date() : opts.dynamicRenderingFallbacks?.now?.()
+    const now = await opts.dynamicMethods.now()
     if (!now) return undefined
-    date = new LiquidDate(now, locale, defaultTimezoneOffset)
+    date = new LiquidDate(now, locale, await getTimezoneOffset())
   } else if (isNumber(v)) {
-    date = new LiquidDate(v * 1000, locale, defaultTimezoneOffset)
+    date = new LiquidDate(v * 1000, locale, await getTimezoneOffset())
   } else if (isString(v)) {
     if (/^\d+$/.test(v)) {
-      date = new LiquidDate(+v * 1000, locale, defaultTimezoneOffset)
+      date = new LiquidDate(+v * 1000, locale, await getTimezoneOffset())
     } else if (opts.preserveTimezones && timezoneOffset === undefined) {
       date = LiquidDate.createDateFixedToTimezone(v, locale)
     } else {
-      date = new LiquidDate(v, locale, defaultTimezoneOffset)
+      date = new LiquidDate(v, locale, await getTimezoneOffset())
     }
   } else {
-    date = new LiquidDate(v, locale, defaultTimezoneOffset)
+    date = new LiquidDate(v, locale, await getTimezoneOffset())
   }
   return date.valid() ? date : undefined
 }
