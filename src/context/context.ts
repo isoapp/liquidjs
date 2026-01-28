@@ -87,6 +87,9 @@ export class Context {
     if (isString(paths)) paths = paths.split('.')
     for (let i = 0; i < paths.length; i++) {
       scope = yield this.readProperty(scope as object, paths[i])
+      if (scope instanceof Error) {
+        throw scope
+      }
       if (strictVariables && isUndefined(scope)) {
         throw new InternalUndefinedVariableError((paths as string[]).slice(0, i + 1).join!('.'))
       }
