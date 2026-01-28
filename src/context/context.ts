@@ -124,7 +124,7 @@ export class Context {
     return this.globals
   }
   * readProperty (obj: Scope, key: (PropertyKey | Drop)) {
-    obj = toLiquid(obj)
+    obj = yield toLiquid(obj)
     key = toValue(key) as PropertyKey
     if (isNil(obj)) return obj
     if (isArray(obj) && (key as number) < 0) return obj[obj.length + +key]
