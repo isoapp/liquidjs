@@ -1,3 +1,4 @@
+import { toPromise } from '../util/async'
 import { Context } from './context'
 import { Scope } from './scope'
 
@@ -45,6 +46,14 @@ describe('Context', function () {
       } })
       // eslint-disable-next-line deprecation/deprecation
       expect(scope.get(['foo', 'bar'])).toEqual('BAR')
+    })
+    it('should respect async toLiquid', async function () {
+      const scope = new Context({ foo: {
+        toLiquid: () => new Promise(resolve => setTimeout(() => resolve({ bar: 'BAR' }), 1)),
+        bar: 'bar'
+      } })
+      const result = await toPromise(scope._get(['foo', 'bar']))
+      expect(result).toEqual('BAR')
     })
     it('should return undefined when not exist', async function () {
       expect(ctx.get(['foo', 'foo', 'foo'])).toBeUndefined()
